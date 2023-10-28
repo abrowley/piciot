@@ -11,7 +11,7 @@ add_executable(
         ${project_name}
         src/main.cpp)
 
-target_include_directories(${project_name} PRIVATE port/FreeRTOS-Kernelcd)
+target_include_directories(${project_name} PRIVATE port/FreeRTOS-Kernel)
 
 target_link_libraries(${project_name}
         pico_stdlib
