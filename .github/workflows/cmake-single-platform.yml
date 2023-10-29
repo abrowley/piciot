@@ -30,6 +30,9 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPICO_BOARD=pico_w -DWIFI_SSID="${{secrets.WIFI_SSID}}" -DWIFI_PASSWORD="${{secrets.WIFI_PASWORD}}"
 
+    - name: Apply Patch
+      run: git apply lwip.patch
+
     - name: Build
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
