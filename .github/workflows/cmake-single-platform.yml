@@ -34,6 +34,7 @@ jobs:
 
     - name: Apply Patch
       working-directory: ${{github.workspace}}
+      continue-on-error: true
       run: git apply -v --reject lwip.patch
 
     - name: Build
