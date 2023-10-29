@@ -12,11 +12,24 @@ add_executable(
         src/main.cpp)
 
 target_include_directories(${project_name} PRIVATE port/FreeRTOS-Kernel)
+target_include_directories(${project_name} PRIVATE port/lwip)
+
+if((DEFINED WIFI_SSID) AND (DEFINED WIFI_PASSWORD))
+    target_compile_definitions(${project_name} PRIVATE
+            WIFI_SSID=\"${WIFI_SSID}\"
+            WIFI_PASSWORD=\"${WIFI_PASSWORD}\"
+    )
+else()
+      message(FATAL_ERROR
+              "WIFI Credentials not defined. Add -DWIFI_SSID=<YOUR_SSID> and -DWIFI_PASSWORD=<YOUR_PASSWORD> to CMAKE Args")
+endif ()
 
 target_link_libraries(${project_name}
         pico_stdlib
-        FreeRTOS-Kernel
+        pico_cyw43_arch_lwip_sys_freertos
+        pico_lwip_mqtt
         FreeRTOS-Kernel-Heap4
 )
+
 pico_enable_stdio_uart(${project_name} 1)
 pico_add_extra_outputs(${project_name})
