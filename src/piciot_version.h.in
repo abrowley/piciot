@@ -1,0 +1,3 @@
+#ifndef PICIOT_VERSION
+#define PICIOT_VERSION "${GIT_REPO_VERSION}"
+#endif

@@ -13,6 +13,7 @@
 #include "lwip/apps/mqtt.h"
 #include "lwip/apps/mqtt_priv.h"
 #include "task.h"
+#include "piciot_version.h"
 
 #define LED_PIN 15
 #define DEBUG_printf printf
@@ -285,7 +286,7 @@ void vMqttTask(void *) {
 
 int main() {
     stdio_init_all();
-    std::cout << "piciot starting" << std::endl;
+    DEBUG_printf("piciot version %s starting\n",PICIOT_VERSION);
     xTaskCreate(vMqttTask, "MQTT", 256, nullptr, 1, nullptr);
     xTaskCreate(vBlinkTask, "LED", 128, nullptr, 1, nullptr);
     vTaskStartScheduler();

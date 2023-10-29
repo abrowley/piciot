@@ -7,12 +7,17 @@ include(lib/FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/FreeRTOS_Kernel_impor
 project(${project_name} C CXX ASM)
 pico_sdk_init()
 
+execute_process(COMMAND git describe --tags --always OUTPUT_STRIP_TRAILING_WHITESPACE
+        OUTPUT_VARIABLE GIT_REPO_VERSION)
+configure_file("src/piciot_version.h.in" "piciot_version.h")
+
 add_executable(
         ${project_name}
         src/main.cpp)
 
 target_include_directories(${project_name} PRIVATE port/FreeRTOS-Kernel)
 target_include_directories(${project_name} PRIVATE port/lwip)
+target_include_directories (${project_name} PRIVATE ${CMAKE_BINARY_DIR})
 
 if((DEFINED WIFI_SSID) AND (DEFINED WIFI_PASSWORD))
     target_compile_definitions(${project_name} PRIVATE
