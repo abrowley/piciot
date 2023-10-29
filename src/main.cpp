@@ -286,7 +286,7 @@ void vMqttTask(void *) {
 
 int main() {
     stdio_init_all();
-    DEBUG_printf("piciot version %s starting\n",GIT_VERSION);
+    DEBUG_printf("piciot version %s starting\n",PICIOT_VERSION);
     xTaskCreate(vMqttTask, "MQTT", 256, nullptr, 1, nullptr);
     xTaskCreate(vBlinkTask, "LED", 128, nullptr, 1, nullptr);
     vTaskStartScheduler();

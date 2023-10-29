@@ -1,3 +1,3 @@
-#ifndef GIT_VERSION
-#define GIT_VERSION "${GIT_REPO_VERSION}"
+#ifndef PICIOT_VERSION
+#define PICIOT_VERSION "${GIT_REPO_VERSION}"
 #endif
