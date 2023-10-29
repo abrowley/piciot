@@ -24,10 +24,10 @@
 #define WIFI_RETRY 3
 #define DELAY 1000
 #ifndef WIFI_SSID
-#error "WIFI_SSID should be passed as a veriable to cmake =DWIFI_SSID="<YOUR_SSID_HERE>""
+#error "WIFI_SSID should be passed as a variable to cmake =DWIFI_SSID="<YOUR_SSID_HERE>""
 #endif
 #ifndef WIFI_PASSWORD
-#error "WIFI_PASSWORD should be passed as a veriable to cmake =DWIFI_PASSWORD="<YOUR_PASSWSORD_HERE>""
+#error "WIFI_PASSWORD should be passed as a variable to cmake =DWIFI_PASSWORD="<YOUR_PASSWSORD_HERE>""
 #endif
 
 
