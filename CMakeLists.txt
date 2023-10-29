@@ -9,7 +9,7 @@ pico_sdk_init()
 
 execute_process(COMMAND git describe --tags --always OUTPUT_STRIP_TRAILING_WHITESPACE
         OUTPUT_VARIABLE GIT_REPO_VERSION)
-configure_file("src/version.h.in" "src/version.h")
+configure_file("src/piciot_version.h.in" "piciot_version.h")
 
 add_executable(
         ${project_name}

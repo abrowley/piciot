@@ -13,7 +13,7 @@
 #include "lwip/apps/mqtt.h"
 #include "lwip/apps/mqtt_priv.h"
 #include "task.h"
-#include "src/version.h"
+#include "piciot_version.h"
 
 #define LED_PIN 15
 #define DEBUG_printf printf
