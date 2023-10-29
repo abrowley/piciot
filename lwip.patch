@@ -1,7 +1,7 @@
-diff --git lib/pico-sdk/lib/contrib/ports/freertos/include/arch/sys_arch.h lib/pico-sdk/lib/contrib/ports/freertos/include/arch/sys_arch.h
+diff --git ./lib/pico-sdk/lib/lwip/contrib/ports/freertos/include/arch/sys_arch.h ./lib/pico-sdk/lib/lwip/contrib/ports/freertos/include/arch/sys_arch.h
 index 0cfc889d..6da8c6ed 100644
---- lib/pico-sdk/lib/contrib/ports/freertos/include/arch/sys_arch.h
-+++ lib/pico-sdk/lib/contrib/ports/freertos/include/arch/sys_arch.h
+--- ./lib/pico-sdk/lib/lwip/contrib/ports/freertos/include/arch/sys_arch.h
++++ ./lib/pico-sdk/lib/lwip/contrib/ports/freertos/include/arch/sys_arch.h
 @@ -32,6 +32,7 @@
  #ifndef LWIP_ARCH_SYS_ARCH_H
  #define LWIP_ARCH_SYS_ARCH_H
@@ -10,10 +10,10 @@ index 0cfc889d..6da8c6ed 100644
  #include "lwip/opt.h"
  #include "lwip/arch.h"
  
-diff --git lib/pico-sdk/lib/src/include/lwip/opt.h lib/pico-sdk/lib/src/include/lwip/opt.h
+diff --git ./lib/pico-sdk/lib/lwip/src/include/lwip/opt.h ./lib/pico-sdk/lib/lwip/src/include/lwip/opt.h
 index 08c2628a..ebdf9e95 100644
---- lib/pico-sdk/lib/src/include/lwip/opt.h
-+++ lib/pico-sdk/lib/src/include/lwip/opt.h
+--- ./lib/pico-sdk/lib/lwip/src/include/lwip/opt.h
++++ ./lib/pico-sdk/lib/lwip/src/include/lwip/opt.h
 @@ -506,7 +506,7 @@
   * The formula expects settings to be either '0' or '1'.
   */
