@@ -20,7 +20,14 @@ jobs:
     runs-on:
       - raspberrypi
     steps:
-    - uses: actions/checkout@v4
+    - name: Clean workspace
+      run: |
+        echo "Cleaning up previous run"
+        rm -rf "${{ github.workspace }}"
+        mkdir -p "${{ github.workspace }}"
+
+    - name: Checkout
+      uses: actions/checkout@v4
       with:
         clean: true
 
