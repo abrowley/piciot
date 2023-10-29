@@ -34,7 +34,7 @@ jobs:
 
     - name: Apply Patch
       working-directory: ${{github.workspace}}
-      run: git apply lwip.patch
+      run: git apply -v lwip.patch
 
     - name: Build
       # Build your program with the given configuration
