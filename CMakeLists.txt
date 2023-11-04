@@ -13,7 +13,9 @@ configure_file("src/piciot_version.h.in" "piciot_version.h")
 
 add_executable(
         ${project_name}
-        src/main.cpp)
+        src/main.cpp
+        src/mqtt_client.cpp
+)
 
 target_include_directories(${project_name} PRIVATE port/FreeRTOS-Kernel)
 target_include_directories(${project_name} PRIVATE port/lwip)
