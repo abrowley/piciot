@@ -9,7 +9,7 @@
 
 #define LED_PIN 15
 #define DEBUG_printf printf
-#define MQTT_SERVER_HOST "test.mosquitto.org"
+#define MQTT_SERVER_HOST "mqtt.chiltern-analytics.co.uk"
 #define MQTT_SERVER_PORT 1883
 #define SUBSCRIBE_TOPIC "pico_w/recv"
 #define PUBLISH_TOPIC "pico_w/test"

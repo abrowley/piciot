@@ -15,6 +15,7 @@ add_executable(
         ${project_name}
         src/main.cpp
         src/mqtt_client.cpp
+        src/ssd1306.c
 )
 
 target_include_directories(${project_name} PRIVATE port/FreeRTOS-Kernel)
@@ -36,6 +37,7 @@ target_link_libraries(${project_name}
         pico_cyw43_arch_lwip_sys_freertos
         pico_lwip_mqtt
         FreeRTOS-Kernel-Heap4
+        hardware_i2c
 )
 
 pico_enable_stdio_uart(${project_name} 1)
