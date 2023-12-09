@@ -5,6 +5,11 @@
 #include "task.h"
 #include "piciot_version.h"
 #include "mqtt_client.h"
+#include "hardware/i2c.h"
+
+extern "C" {
+#include "ssd1306.h"
+}
 
 #define LED_PIN 15
 #define DEBUG_printf printf
@@ -36,7 +41,7 @@ void vMqttTask(void *) {
     cyw43_arch_enable_sta_mode();
 
     int retry_count = WIFI_RETRY;
-    DEBUG_printf("Connecting to WiFi : %s...\n",WIFI_SSID);
+    DEBUG_printf("Connecting to WiFi : %s...\n", WIFI_SSID);
     while (
             cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000)
             && retry_count > 0
@@ -56,11 +61,67 @@ void vMqttTask(void *) {
     mqtt_run(state);
 }
 
+void setup_gpios(void) {
+    i2c_init(i2c1, 400000);
+    gpio_set_function(2, GPIO_FUNC_I2C);
+    gpio_set_function(3, GPIO_FUNC_I2C);
+    gpio_pull_up(2);
+    gpio_pull_up(3);
+}
+
+void vDisplayTask(void *) {
+    const char *words[] = {"Pico W", "FreeRTOS", "MQTT", PICIOT_VERSION};
+
+    ssd1306_t disp;
+    disp.external_vcc = false;
+    ssd1306_init(&disp, 128, 64, (0x78 >> 1), i2c1);
+    ssd1306_clear(&disp);
+
+    DEBUG_printf("ANIMATION!\n");
+
+    for (;;) {
+        for (int i = 0; i < sizeof(words) / sizeof(char *); ++i) {
+            ssd1306_draw_string(&disp, 0, 0, 1, words[i]);
+            ssd1306_show(&disp);
+            vTaskDelay(DELAY);
+            ssd1306_clear(&disp);
+        }
+        vTaskDelay(DELAY / 10);
+    }
+}
+
+
 int main() {
     stdio_init_all();
-    DEBUG_printf("piciot version %s starting\n",PICIOT_VERSION);
-    xTaskCreate(vMqttTask, "MQTT", 256, nullptr, 1, nullptr);
-    xTaskCreate(vBlinkTask, "LED", 128, nullptr, 1, nullptr);
+    setup_gpios();
+
+    DEBUG_printf("piciot version %s starting\n", PICIOT_VERSION);
+    xTaskCreate(
+            vMqttTask,
+            "MQTT",
+            256,
+            nullptr,
+            1,
+            nullptr
+            );
+
+    xTaskCreate(
+            vBlinkTask,
+            "LED",
+            128,
+            nullptr,
+            1,
+            nullptr
+            );
+
+    xTaskCreate(
+            vDisplayTask,
+            "DISPLAY",
+            128,
+            nullptr,
+            1,
+            nullptr
+            );
     vTaskStartScheduler();
     return 0;
 }
