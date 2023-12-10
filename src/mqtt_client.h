@@ -6,6 +6,7 @@
 #define PICIOT_MQTT_CLIENT_H
 #include "lwip/apps/mqtt.h"
 #include "lwip/apps/mqtt_priv.h"
+#include "message_queue.h"
 
 #define LED_PIN 15
 #define DEBUG_printf printf
@@ -15,12 +16,14 @@
 #define PUBLISH_TOPIC "pico_w/test"
 #define CLIENT_ID "PicoW"
 
+
 typedef struct MQTT_CLIENT_T_ {
     ip_addr_t remote_addr;
     mqtt_client_t *mqtt_client;
     u32_t received;
     u32_t counter;
     u32_t reconnect;
+    MSG_QUEUE_T* mq;
 } MQTT_CLIENT_T;
 
 [[maybe_unused]] err_t mqtt_connect(MQTT_CLIENT_T *state);

@@ -6,7 +6,8 @@
 #include "lwip/altcp_tcp.h"
 #include "lwip/apps/mqtt.h"
 #include "lwip/apps/mqtt_priv.h"
-
+#include "FreeRTOS.h"
+#include "queue.h"
 
 
 #include "mqtt_client.h"
@@ -68,6 +69,7 @@ void run_dns_lookup(MQTT_CLIENT_T *state) {
 }
 
 [[maybe_unused]] static void mqtt_pub_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
+    auto state = static_cast<MQTT_CLIENT_T*>(arg);
     if (data_in > 0) {
         data_in -= len;
         memcpy(&buffer[data_len], data, len);
@@ -76,6 +78,7 @@ void run_dns_lookup(MQTT_CLIENT_T *state) {
         if (data_in == 0) {
             buffer[data_len] = 0;
             DEBUG_printf("Message received: %s\n", &buffer);
+            xQueueSend((state->mq->queue),buffer,(TickType_t)10);
         }
     }
 }
@@ -184,7 +187,7 @@ void mqtt_run(MQTT_CLIENT_T *state) {
     if (mqtt_connect(state) == ERR_OK) {
         absolute_time_t timeout = nil_time;
         bool subscribed = false;
-        mqtt_set_inpub_callback(state->mqtt_client, mqtt_pub_start_cb, mqtt_pub_data_cb, 0);
+        mqtt_set_inpub_callback(state->mqtt_client, mqtt_pub_start_cb, mqtt_pub_data_cb, state);
 
         while (true) {
             absolute_time_t now = get_absolute_time();

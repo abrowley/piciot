@@ -6,6 +6,7 @@
 #include "piciot_version.h"
 #include "mqtt_client.h"
 #include "hardware/i2c.h"
+#include "message_queue.h"
 
 extern "C" {
 #include "ssd1306.h"
@@ -35,7 +36,8 @@ void vBlinkTask(void *) {
     }
 }
 
-void vMqttTask(void *) {
+void vMqttTask(void * mq) {
+    auto message_queue = static_cast<MSG_QUEUE_T*>(mq);
     if (cyw43_arch_init()) {
         DEBUG_printf("failed to initialise\n");
     }
@@ -58,6 +60,7 @@ void vMqttTask(void *) {
     }
 
     MQTT_CLIENT_T *state = mqtt_client_init();
+    state->mq = message_queue;
     run_dns_lookup(state);
     mqtt_run(state);
 }
@@ -70,7 +73,8 @@ void setup_gpios(void) {
     gpio_pull_up(3);
 }
 
-void vDisplayTask(void *) {
+void vDisplayTask(void * mq) {
+    auto message_queue = static_cast<MSG_QUEUE_T*>(mq);
     const char *words[] = {"Pico W", "FreeRTOS", "MQTT", PICIOT_VERSION};
 
     ssd1306_t disp;
@@ -79,10 +83,12 @@ void vDisplayTask(void *) {
     ssd1306_clear(&disp);
 
     DEBUG_printf("ANIMATION!\n");
-
+    char data[100];
     for (;;) {
         for (int i = 0; i < sizeof(words) / sizeof(char *); ++i) {
-            ssd1306_draw_string(&disp, 0, 0, 1, words[i]);
+            xQueueReceive(message_queue->queue,data,(TickType_t)10);
+            ssd1306_draw_string(&disp, 20, 0, 1, words[i]);
+            ssd1306_draw_string(&disp,0,20,1,data);
             ssd1306_show(&disp);
             vTaskDelay(DELAY);
             ssd1306_clear(&disp);
@@ -96,12 +102,15 @@ int main() {
     stdio_init_all();
     setup_gpios();
 
+    auto mq = message_queue_init();
+
+
     DEBUG_printf("piciot version %s starting\n", PICIOT_VERSION);
     xTaskCreate(
             vMqttTask,
             "MQTT",
             256,
-            nullptr,
+            mq,
             1,
             nullptr
             );
@@ -119,7 +128,7 @@ int main() {
             vDisplayTask,
             "DISPLAY",
             128,
-            nullptr,
+            mq,
             1,
             nullptr
             );

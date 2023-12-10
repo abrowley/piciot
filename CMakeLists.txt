@@ -16,6 +16,7 @@ add_executable(
         src/main.cpp
         src/mqtt_client.cpp
         src/ssd1306.c
+        src/message_queue.cpp
 )
 
 target_include_directories(${project_name} PRIVATE port/FreeRTOS-Kernel)
