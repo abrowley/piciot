@@ -17,6 +17,9 @@ extern "C" {
 #define DEBUG_printf printf
 #define WIFI_RETRY 3
 #define DELAY 1000
+
+void init_wifi();
+
 #ifndef WIFI_SSID
 #error "WIFI_SSID should be passed as a variable to cmake =DWIFI_SSID="<YOUR_SSID_HERE>""
 #endif
@@ -37,8 +40,16 @@ void vBlinkTask(void *) {
 }
 
 void vMqttTask(void * mq) {
+    init_wifi();
     auto message_queue = static_cast<MSG_QUEUE_T*>(mq);
-    if (cyw43_arch_init()) {
+    MQTT_CLIENT_T *state = mqtt_client_init();
+    state->mq = message_queue;
+    run_dns_lookup(state);
+    mqtt_run(state);
+}
+
+void init_wifi() {
+    if (cyw43_arch_init_with_country(CYW43_COUNTRY_UK)) {
         DEBUG_printf("failed to initialise\n");
     }
     cyw43_arch_enable_sta_mode();
@@ -58,11 +69,6 @@ void vMqttTask(void * mq) {
         DEBUG_printf("Connect failed after %i retry attempts\n", WIFI_RETRY);
         exit(-1);
     }
-
-    MQTT_CLIENT_T *state = mqtt_client_init();
-    state->mq = message_queue;
-    run_dns_lookup(state);
-    mqtt_run(state);
 }
 
 void setup_gpios(void) {
@@ -99,6 +105,8 @@ void vDisplayTask(void * mq) {
 
 
 int main() {
+
+    sleep_ms(10000);
     stdio_init_all();
     setup_gpios();
 
