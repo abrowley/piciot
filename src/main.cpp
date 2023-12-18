@@ -6,6 +6,7 @@
 #include "piciot_version.h"
 #include "mqtt_client.h"
 #include "hardware/i2c.h"
+#include "hardware/adc.h"
 #include "message_queue.h"
 
 extern "C" {
@@ -14,6 +15,7 @@ extern "C" {
 
 
 #define LED_PIN 15
+#define POT_PIN 26
 #define DEBUG_printf printf
 #define WIFI_RETRY 3
 #define DELAY 1000
@@ -35,6 +37,21 @@ void vBlinkTask(void *) {
         gpio_put(LED_PIN, 1);
         vTaskDelay(DELAY);
         gpio_put(LED_PIN, 0);
+        vTaskDelay(DELAY);
+    }
+}
+
+void vPotTask(void *mq){
+    adc_init();
+    gpio_init(POT_PIN);
+    adc_select_input(0);
+    auto message_queue = static_cast<MSG_QUEUE_T*>(mq);
+    char message[MESSAGE_SIZE];
+    for(;;){
+        float voltage = adc_read() * 3.3f / (1 << 12);
+        sprintf(message,"volt: %f\n",voltage);
+        DEBUG_printf(message);
+        xQueueSend(message_queue->queue,message,(TickType_t)10);
         vTaskDelay(DELAY);
     }
 }
@@ -89,11 +106,12 @@ void vDisplayTask(void * mq) {
     ssd1306_clear(&disp);
 
     DEBUG_printf("ANIMATION!\n");
-    char data[100];
+    char data[MESSAGE_SIZE];
     for (;;) {
         for (int i = 0; i < sizeof(words) / sizeof(char *); ++i) {
-            xQueueReceive(message_queue->queue,data,(TickType_t)10);
             ssd1306_draw_string(&disp, 20, 0, 1, words[i]);
+            ssd1306_draw_line(&disp,0,10,100,10);
+            xQueueReceive(message_queue->queue,data,(TickType_t)10);
             ssd1306_draw_string(&disp,0,20,1,data);
             ssd1306_show(&disp);
             vTaskDelay(DELAY);
@@ -109,6 +127,7 @@ int main() {
     sleep_ms(10000);
     stdio_init_all();
     setup_gpios();
+
 
     auto mq = message_queue_init();
 
@@ -140,6 +159,15 @@ int main() {
             1,
             nullptr
             );
+
+    xTaskCreate(
+            vPotTask,
+            "POT",
+            128,
+            mq,
+            1,
+            nullptr
+    );
     vTaskStartScheduler();
     return 0;
 }

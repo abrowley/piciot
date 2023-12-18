@@ -39,6 +39,7 @@ target_link_libraries(${project_name}
         pico_lwip_mqtt
         FreeRTOS-Kernel-Heap4
         hardware_i2c
+        hardware_adc
 )
 
 pico_enable_stdio_uart(${project_name} 1)

@@ -12,6 +12,6 @@ MSG_QUEUE_T *message_queue_init() {
         DEBUG_printf("failed to allocate queue\n");
         return nullptr;
     }
-    msg_queue->queue = xQueueCreate(10,sizeof (char[100]));
+    msg_queue->queue = xQueueCreate(10,sizeof (char[MESSAGE_SIZE]));
     return msg_queue;
 }

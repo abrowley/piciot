@@ -9,6 +9,8 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 
+#define MESSAGE_SIZE 100
+
 typedef struct MSG_QUEUE_T_ {
     QueueHandle_t queue;
 } MSG_QUEUE_T;
