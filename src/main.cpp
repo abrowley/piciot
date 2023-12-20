@@ -30,6 +30,7 @@ void init_wifi();
 #endif
 
 
+
 void vBlinkTask(void *) {
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
@@ -49,9 +50,9 @@ void vPotTask(void *mq){
     char message[MESSAGE_SIZE];
     for(;;){
         float voltage = adc_read() * 3.3f / (1 << 12);
-        sprintf(message,"volt: %f\n",voltage);
+        sprintf(message,R"({"volts": "%f"})",voltage);
         DEBUG_printf(message);
-        xQueueSend(message_queue->queue,message,(TickType_t)10);
+        xQueueSend(message_queue->input_queue,message,(TickType_t)10);
         vTaskDelay(DELAY);
     }
 }
@@ -96,28 +97,35 @@ void setup_gpios(void) {
     gpio_pull_up(3);
 }
 
+
 void vDisplayTask(void * mq) {
     auto message_queue = static_cast<MSG_QUEUE_T*>(mq);
-    const char *words[] = {"Pico W", "FreeRTOS", "MQTT", PICIOT_VERSION};
 
     ssd1306_t disp;
     disp.external_vcc = false;
     ssd1306_init(&disp, 128, 64, (0x78 >> 1), i2c1);
     ssd1306_clear(&disp);
+    ssd1306_show(&disp);
 
     DEBUG_printf("ANIMATION!\n");
     char data[MESSAGE_SIZE];
+    int8_t row = 0;
     for (;;) {
-        for (int i = 0; i < sizeof(words) / sizeof(char *); ++i) {
-            ssd1306_draw_string(&disp, 20, 0, 1, words[i]);
+        if(xQueueReceive(message_queue->input_queue,data,(TickType_t)10)==pdTRUE){
+            ssd1306_draw_string(&disp, 20, 0, 1, "MESSAGES");
             ssd1306_draw_line(&disp,0,10,100,10);
-            xQueueReceive(message_queue->queue,data,(TickType_t)10);
-            ssd1306_draw_string(&disp,0,20,1,data);
+            ssd1306_draw_string(&disp,0,18+row*(10),1,data);
             ssd1306_show(&disp);
+            xQueueSend(message_queue->output_queue,data,(TickType_t)10);
+            row++;
+            if(row==4){
+                row = 0;
+                ssd1306_clear(&disp);
+            }
+            vTaskDelay(DELAY/10);
+        }else{
             vTaskDelay(DELAY);
-            ssd1306_clear(&disp);
         }
-        vTaskDelay(DELAY / 10);
     }
 }
 
@@ -130,6 +138,7 @@ int main() {
 
 
     auto mq = message_queue_init();
+
 
 
     DEBUG_printf("piciot version %s starting\n", PICIOT_VERSION);
