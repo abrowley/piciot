@@ -78,7 +78,7 @@ void run_dns_lookup(MQTT_CLIENT_T *state) {
 
         if (data_in == 0) {
             buffer[data_len] = 0;
-            sprintf(message,R"({"mqtt2": "%s"})",&buffer);
+            sprintf(message,R"({"mqtt": "%s"})",&buffer);
             DEBUG_printf("%s\n", &message);
             xQueueSend((state->mq->input_queue),message,(TickType_t)10);
         }

@@ -97,6 +97,11 @@ void setup_gpios(void) {
     gpio_pull_up(3);
 }
 
+void permute_rows(char* rows[], int len_rows){
+    for(int i=1;i!=len_rows;i++){
+        memcpy(rows[i-1],rows[i],MESSAGE_SIZE);
+    }
+}
 
 void vDisplayTask(void * mq) {
     auto message_queue = static_cast<MSG_QUEUE_T*>(mq);
@@ -109,22 +114,23 @@ void vDisplayTask(void * mq) {
 
     DEBUG_printf("ANIMATION!\n");
     char data[MESSAGE_SIZE];
-    int8_t row = 0;
+    char row0[MESSAGE_SIZE], row1[MESSAGE_SIZE], row2[MESSAGE_SIZE], row3[MESSAGE_SIZE];
+    char* display_rows[4] = {row0,row1,row2,row3};
     for (;;) {
         if(xQueueReceive(message_queue->input_queue,data,(TickType_t)10)==pdTRUE){
             ssd1306_draw_string(&disp, 20, 0, 1, "MESSAGES");
             ssd1306_draw_line(&disp,0,10,100,10);
-            ssd1306_draw_string(&disp,0,18+row*(10),1,data);
+            display_rows[3] = data;
+            for(int i=0;i!=4;i++) {
+                ssd1306_draw_string(&disp, 0, 18 + i * (10), 1, display_rows[i]);
+            }
             ssd1306_show(&disp);
             xQueueSend(message_queue->output_queue,data,(TickType_t)10);
-            row++;
-            if(row==4){
-                row = 0;
-                ssd1306_clear(&disp);
-            }
+            permute_rows(display_rows,4);
+            ssd1306_clear(&disp);
             vTaskDelay(DELAY/10);
         }else{
-            vTaskDelay(DELAY);
+            vTaskDelay(DELAY/10);
         }
     }
 }
@@ -163,7 +169,7 @@ int main() {
     xTaskCreate(
             vDisplayTask,
             "DISPLAY",
-            128,
+            256,
             mq,
             1,
             nullptr
