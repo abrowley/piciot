@@ -118,8 +118,9 @@ void vDisplayTask(void * mq) {
     char* display_rows[4] = {row0,row1,row2,row3};
     for (;;) {
         if(xQueueReceive(message_queue->input_queue,data,(TickType_t)10)==pdTRUE){
-            ssd1306_draw_string(&disp, 20, 0, 1, "MESSAGES");
-            ssd1306_draw_line(&disp,0,10,100,10);
+            ssd1306_draw_string(&disp, 0, 0, 1, "Messages");
+            ssd1306_draw_string(&disp, 80, 0, 1, "piciot");
+            ssd1306_draw_square(&disp,0,10,150,5);
             display_rows[3] = data;
             for(int i=0;i!=4;i++) {
                 ssd1306_draw_string(&disp, 0, 18 + i * (10), 1, display_rows[i]);
