@@ -14,7 +14,6 @@
 #define DELAY 1000
 
 u32_t data_in = 0;
-u8_t buffer[1025];
 u8_t data_len = 0;
 
 // Perform initialisation
@@ -70,6 +69,8 @@ void run_dns_lookup(MQTT_CLIENT_T *state) {
 
 [[maybe_unused]] static void mqtt_pub_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
     auto state = static_cast<MQTT_CLIENT_T*>(arg);
+    u8_t buffer[MESSAGE_SIZE];
+    char message[MESSAGE_SIZE];
     if (data_in > 0) {
         data_in -= len;
         memcpy(&buffer[data_len], data, len);
@@ -77,8 +78,9 @@ void run_dns_lookup(MQTT_CLIENT_T *state) {
 
         if (data_in == 0) {
             buffer[data_len] = 0;
-            DEBUG_printf("Message received: %s\n", &buffer);
-            xQueueSend((state->mq->queue),buffer,(TickType_t)10);
+            sprintf(message,R"({"mqtt": "%s"})",&buffer);
+            DEBUG_printf("%s\n", &message);
+            xQueueSend((state->mq->input_queue),message,(TickType_t)10);
         }
     }
 }
@@ -102,21 +104,21 @@ void run_dns_lookup(MQTT_CLIENT_T *state) {
 }
 
 [[maybe_unused]] err_t mqtt_publish(MQTT_CLIENT_T *state) {
-    char pub_buffer[128];
+    char pub_buffer[MESSAGE_SIZE];
+    err_t err  = ERR_OK;
+    if(xQueueReceive(state->mq->output_queue,pub_buffer,(TickType_t)10) == pdTRUE)
+    {
+        u8_t qos = 0; /* 0 1 or 2, see MQTT specification.  AWS IoT does not support QoS 2 */
+        u8_t retain = 0;
+        cyw43_arch_lwip_begin();
+        err = mqtt_publish(state->mqtt_client, PUBLISH_TOPIC, pub_buffer, strlen(pub_buffer), qos, retain, mqtt_pub_request_cb,
+                           state);
+        cyw43_arch_lwip_end();
+        if (err != ERR_OK) {
+            DEBUG_printf("Publish err: %d\n", err);
+        }
 
-    sprintf(pub_buffer, R"(({"message":"hello from picow %lu / %lu"}))", state->received, state->counter);
-
-    err_t err;
-    u8_t qos = 0; /* 0 1 or 2, see MQTT specification.  AWS IoT does not support QoS 2 */
-    u8_t retain = 0;
-    cyw43_arch_lwip_begin();
-    err = mqtt_publish(state->mqtt_client, PUBLISH_TOPIC, pub_buffer, strlen(pub_buffer), qos, retain, mqtt_pub_request_cb,
-                       state);
-    cyw43_arch_lwip_end();
-    if (err != ERR_OK) {
-        DEBUG_printf("Publish err: %d\n", err);
     }
-
     return err;
 }
 

@@ -6,6 +6,7 @@
 #include "piciot_version.h"
 #include "mqtt_client.h"
 #include "hardware/i2c.h"
+#include "hardware/adc.h"
 #include "message_queue.h"
 
 extern "C" {
@@ -14,6 +15,7 @@ extern "C" {
 
 
 #define LED_PIN 15
+#define POT_PIN 26
 #define DEBUG_printf printf
 #define WIFI_RETRY 3
 #define DELAY 1000
@@ -28,6 +30,7 @@ void init_wifi();
 #endif
 
 
+
 void vBlinkTask(void *) {
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, GPIO_OUT);
@@ -35,6 +38,21 @@ void vBlinkTask(void *) {
         gpio_put(LED_PIN, 1);
         vTaskDelay(DELAY);
         gpio_put(LED_PIN, 0);
+        vTaskDelay(DELAY);
+    }
+}
+
+void vPotTask(void *mq){
+    adc_init();
+    gpio_init(POT_PIN);
+    adc_select_input(0);
+    auto message_queue = static_cast<MSG_QUEUE_T*>(mq);
+    char message[MESSAGE_SIZE];
+    for(;;){
+        float voltage = adc_read() * 3.3f / (1 << 12);
+        sprintf(message,R"({"volts": "%f"})",voltage);
+        DEBUG_printf(message);
+        xQueueSend(message_queue->input_queue,message,(TickType_t)10);
         vTaskDelay(DELAY);
     }
 }
@@ -79,27 +97,41 @@ void setup_gpios(void) {
     gpio_pull_up(3);
 }
 
+void permute_rows(char* rows[], int len_rows){
+    for(int i=1;i!=len_rows;i++){
+        memcpy(rows[i-1],rows[i],MESSAGE_SIZE);
+    }
+}
+
 void vDisplayTask(void * mq) {
     auto message_queue = static_cast<MSG_QUEUE_T*>(mq);
-    const char *words[] = {"Pico W", "FreeRTOS", "MQTT", PICIOT_VERSION};
 
     ssd1306_t disp;
     disp.external_vcc = false;
     ssd1306_init(&disp, 128, 64, (0x78 >> 1), i2c1);
     ssd1306_clear(&disp);
+    ssd1306_show(&disp);
 
     DEBUG_printf("ANIMATION!\n");
-    char data[100];
+    char data[MESSAGE_SIZE];
+    char row0[MESSAGE_SIZE], row1[MESSAGE_SIZE], row2[MESSAGE_SIZE], row3[MESSAGE_SIZE];
+    char* display_rows[4] = {row0,row1,row2,row3};
     for (;;) {
-        for (int i = 0; i < sizeof(words) / sizeof(char *); ++i) {
-            xQueueReceive(message_queue->queue,data,(TickType_t)10);
-            ssd1306_draw_string(&disp, 20, 0, 1, words[i]);
-            ssd1306_draw_string(&disp,0,20,1,data);
+        if(xQueueReceive(message_queue->input_queue,data,(TickType_t)10)==pdTRUE){
+            ssd1306_draw_string(&disp, 20, 0, 1, "MESSAGES");
+            ssd1306_draw_line(&disp,0,10,100,10);
+            display_rows[3] = data;
+            for(int i=0;i!=4;i++) {
+                ssd1306_draw_string(&disp, 0, 18 + i * (10), 1, display_rows[i]);
+            }
             ssd1306_show(&disp);
-            vTaskDelay(DELAY);
+            xQueueSend(message_queue->output_queue,data,(TickType_t)10);
+            permute_rows(display_rows,4);
             ssd1306_clear(&disp);
+            vTaskDelay(DELAY/10);
+        }else{
+            vTaskDelay(DELAY/10);
         }
-        vTaskDelay(DELAY / 10);
     }
 }
 
@@ -110,7 +142,9 @@ int main() {
     stdio_init_all();
     setup_gpios();
 
+
     auto mq = message_queue_init();
+
 
 
     DEBUG_printf("piciot version %s starting\n", PICIOT_VERSION);
@@ -135,11 +169,20 @@ int main() {
     xTaskCreate(
             vDisplayTask,
             "DISPLAY",
-            128,
+            256,
             mq,
             1,
             nullptr
             );
+
+    xTaskCreate(
+            vPotTask,
+            "POT",
+            128,
+            mq,
+            1,
+            nullptr
+    );
     vTaskStartScheduler();
     return 0;
 }
