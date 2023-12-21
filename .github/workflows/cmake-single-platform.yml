@@ -35,7 +35,11 @@ jobs:
 
     - name: Retrieve Version
       run : |
-        echo ::set-env name=VERSION::$(git describe)
+        echo "VERSION=$(git describe)" >> $GITHUB_ENV
+
+    - name: Display Version
+      run: |
+        echo "${{env.VERSION}}"
 
     - name: Submodule Update
       run: git submodule update --init --recursive
@@ -63,7 +67,7 @@ jobs:
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v3
       with:
-        name: piciot_${{ env.TAG_NAME }}
+        name: piciot_"${{ env.VERSION }}"
         path: |
           build/*.elf
           build/*.hex
