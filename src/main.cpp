@@ -9,16 +9,21 @@
 #include "hardware/adc.h"
 #include "message_queue.h"
 
+#include "ow_rom.h"
+#include "ds18b20.h"
+
 extern "C" {
 #include "ssd1306.h"
+#include "onewire_library.h"
 }
-
 
 #define LED_PIN 15
 #define POT_PIN 26
 #define DEBUG_printf printf
 #define WIFI_RETRY 3
 #define DELAY 1000
+#define TEMP_PIN 14
+#define MAX_ONEWIRE 10
 
 void init_wifi();
 
@@ -30,6 +35,49 @@ void init_wifi();
 #endif
 
 
+void vOneWireTask(void* mq){
+    gpio_init(TEMP_PIN);
+    OW one_wire;
+    uint offset;
+    PIO pio = pio0;
+    auto message_queue = static_cast<MSG_QUEUE_T*>(mq);
+    if(pio_can_add_program(pio,&onewire_program)){
+        offset = pio_add_program(pio,&onewire_program);
+        if(ow_init(&one_wire,pio,offset,TEMP_PIN)){
+            uint64_t romcode[MAX_ONEWIRE];
+            int num_onewire = ow_romsearch(&one_wire,romcode,MAX_ONEWIRE,OW_SEARCH_ROM);
+            DEBUG_printf("Found %d onewire devices\n",num_onewire);
+            while (num_onewire>0){
+                ow_reset(&one_wire);
+                ow_send(&one_wire, OW_SKIP_ROM);
+                ow_send(&one_wire, DS18B20_CONVERT_T);
+                while(ow_read(&one_wire)==0){
+                    DEBUG_printf("Ds18b20 awaiting conversion ...\n");
+                    vTaskDelay(DELAY);
+                }
+                for(int i=0;i!=num_onewire; i++){
+                    ow_reset(&one_wire);
+                    ow_send(&one_wire, OW_MATCH_ROM);
+                    for( int b=0; b<64; b+=8){
+                        ow_send(&one_wire,romcode[i]>>b);
+                    }
+                    ow_send(&one_wire,DS18B20_READ_SCRATCHPAD);
+                    int16_t temp = 0;
+                    temp = ow_read(&one_wire) | (ow_read(&one_wire)<<8);
+                    char message[MESSAGE_SIZE];
+                    sprintf(message,R"({"temp":"%f","id":"%llu"})",(float)temp/16.0,romcode[i]);
+                    DEBUG_printf(message);
+                    xQueueSend(message_queue->input_queue,message,(TickType_t)10);
+                    vTaskDelay(DELAY);
+                }
+            }
+        } else {
+            DEBUG_printf("Could not init onewire\n");
+        }
+    } else {
+        DEBUG_printf("Could not add pio program\n");
+    }
+}
 
 void vBlinkTask(void *) {
     gpio_init(LED_PIN);
@@ -180,6 +228,14 @@ int main() {
             vPotTask,
             "POT",
             128,
+            mq,
+            1,
+            nullptr
+    );
+    xTaskCreate(
+            vOneWireTask,
+            "OW",
+            256,
             mq,
             1,
             nullptr
