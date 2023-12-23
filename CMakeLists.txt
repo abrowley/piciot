@@ -19,6 +19,14 @@ add_executable(
         src/message_queue.cpp
 )
 
+add_library(onewire_library INTERFACE)
+target_sources(onewire_library INTERFACE ${CMAKE_CURRENT_LIST_DIR}/src/onewire_library.c)
+pico_generate_pio_header(onewire_library ${CMAKE_CURRENT_LIST_DIR}/src/onewire_library.pio)
+target_link_libraries(onewire_library INTERFACE pico_stdlib hardware_pio)
+target_include_directories(onewire_library INTERFACE
+        ${CMAKE_CURRENT_BINARY_DIR}
+)
+
 target_include_directories(${project_name} PRIVATE port/FreeRTOS-Kernel)
 target_include_directories(${project_name} PRIVATE port/lwip)
 target_include_directories (${project_name} PRIVATE ${CMAKE_BINARY_DIR})
@@ -40,6 +48,7 @@ target_link_libraries(${project_name}
         FreeRTOS-Kernel-Heap4
         hardware_i2c
         hardware_adc
+        onewire_library
 )
 
 pico_enable_stdio_uart(${project_name} 1)
